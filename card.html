@@ -118,6 +118,7 @@
   }
   .btn-primary{background:var(--brand-2);color:#fff;}
   .btn-secondary{background:#eef2ff;color:var(--brand-1);}
+  .actions .full{grid-column:1 / -1;}
   .footer-note{
     text-align:center;
     font-size:11.5px;
@@ -168,11 +169,18 @@
       </div>
 
       <div class="card-body">
-        <div class="info-row">
+        <div class="info-row" id="row-ext">
           <div class="icon">☎</div>
           <div>
             <p class="label">내선번호</p>
             <p class="value" id="f-ext"></p>
+          </div>
+        </div>
+        <div class="info-row" id="row-mobile">
+          <div class="icon">📱</div>
+          <div>
+            <p class="label">휴대전화</p>
+            <p class="value" id="f-mobile"></p>
           </div>
         </div>
         <div class="info-row">
@@ -185,7 +193,8 @@
       </div>
 
       <div class="actions">
-        <a id="btn-call" class="btn-primary" href="#">전화 걸기</a>
+        <a id="btn-call-mobile" class="btn-primary full" href="#">휴대전화 걸기</a>
+        <a id="btn-call-ext" class="btn-secondary" href="#">내선 전화</a>
         <button id="btn-vcard" class="btn-secondary" type="button">연락처 저장</button>
       </div>
 
@@ -199,7 +208,7 @@
    * 설정: Google Apps Script 배포 후 발급된 웹 앱 URL(…/exec)을 넣으세요.
    * ============================================================ */
   var CONFIG = {
-    API_URL: 'https://script.google.com/macros/s/AKfycbzPBioUdQRrRM9gkFe_UBXkd6QUkkaW9HohZAL91VuPa3uS1JY48mM65oVydxudUcDCIQ/exec',
+    API_URL: 'https://script.google.com/macros/s/AKfycbyG2RKqmQ1eqE9Jh-9cC_K1tLfmgCzfjpHlVRHnRtu24ROqVT-pmirvHUWSSlfprdck/exec',
     LOGO_DIR: 'assets/logos/',
     DEFAULT_LOGO: 'default.png'
   };
@@ -270,6 +279,19 @@
     render(result.data);
   }
 
+  function setupCallButton(btnId, rawNumber, rowId) {
+    var btn = document.getElementById(btnId);
+    var row = rowId ? document.getElementById(rowId) : null;
+    if (!rawNumber) {
+      btn.style.display = 'none';
+      if (row) row.style.display = 'none';
+      return false;
+    }
+    var telDigits = rawNumber.replace(/[^0-9+]/g, '');
+    btn.href = telDigits ? 'tel:' + telDigits : '#';
+    return true;
+  }
+
   function render(d) {
     document.getElementById('f-school').textContent = d.school || '';
     document.getElementById('f-dept').textContent = d.dept || '';
@@ -277,18 +299,25 @@
     document.getElementById('f-nameEn').textContent = d.nameEn || '';
     document.getElementById('f-title').textContent = d.title || '';
     document.getElementById('f-ext').textContent = d.ext || '-';
+    document.getElementById('f-mobile').textContent = d.mobile || '-';
     document.getElementById('f-org').textContent = [d.school, d.dept].filter(Boolean).join(' · ');
     document.getElementById('f-emblem').src = CONFIG.LOGO_DIR + (d.emblem || CONFIG.DEFAULT_LOGO);
 
-    var telDigits = (d.ext || '').replace(/[^0-9+]/g, '');
-    var callBtn = document.getElementById('btn-call');
-    if (telDigits) {
-      callBtn.href = 'tel:' + telDigits;
-    } else {
-      callBtn.style.display = 'none';
+    var mobileOk = setupCallButton('btn-call-mobile', d.mobile, 'row-mobile');
+    var extOk = setupCallButton('btn-call-ext', d.ext, 'row-ext');
+    var vcardBtn = document.getElementById('btn-vcard');
+
+    if (!mobileOk && extOk) {
+      // 휴대전화가 없으면 내선 전화를 주 버튼(전체 너비)으로 승격
+      var extBtn = document.getElementById('btn-call-ext');
+      extBtn.classList.remove('btn-secondary');
+      extBtn.classList.add('btn-primary', 'full');
+    }
+    if (!mobileOk && !extOk) {
+      vcardBtn.classList.add('full');
     }
 
-    document.getElementById('btn-vcard').addEventListener('click', function () {
+    vcardBtn.addEventListener('click', function () {
       downloadVcard(d);
     });
 
@@ -306,16 +335,30 @@
       'ORG:' + [d.school, d.dept].filter(Boolean).join(' '),
       'TITLE:' + (d.title || ''),
       d.ext ? 'TEL;TYPE=WORK,VOICE:' + d.ext : '',
+      d.mobile ? 'TEL;TYPE=CELL:' + d.mobile : '',
       'END:VCARD'
-    ].filter(Boolean).join('\n');
+    ].filter(Boolean).join('\r\n');
+
+    var isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS 13+
+
+    if (isIOS) {
+      // iOS Safari는 <a download> 속성을 지원하지 않아 blob 다운로드가 동작하지 않습니다.
+      // 대신 data URI로 직접 이동시키면 "연락처 추가" 화면이 뜹니다.
+      var dataUri = 'data:text/vcard;charset=utf-8,' + encodeURIComponent(lines);
+      window.location.href = dataUri;
+      return;
+    }
 
     var blob = new Blob([lines], { type: 'text/vcard;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
     a.download = (d.nameKo || 'contact') + '.vcf';
     document.body.appendChild(a);
     a.click();
     a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
   }
 
   loadCard();

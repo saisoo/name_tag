@@ -159,7 +159,7 @@
 <div class="panel" id="listPanel" style="display:none;">
   <h2>2. 명단 확인 (인쇄에서 제외하려면 체크 해제)</h2>
   <table>
-    <thead><tr><th></th><th>ID</th><th>성명</th><th>학교</th><th>부서</th><th>직함</th><th>교표파일</th></tr></thead>
+    <thead><tr><th></th><th>ID</th><th>성명</th><th>학교</th><th>부서</th><th>직함</th><th>내선</th><th>휴대전화</th><th>교표파일</th></tr></thead>
     <tbody id="listBody"></tbody>
   </table>
   <div class="btn-row">
@@ -222,6 +222,8 @@
         '<td>' + escapeHtml(r.school) + '</td>' +
         '<td>' + escapeHtml(r.dept) + '</td>' +
         '<td>' + escapeHtml(r.title) + '</td>' +
+        '<td>' + escapeHtml(r.ext) + '</td>' +
+        '<td>' + escapeHtml(r.mobile) + '</td>' +
         '<td>' + escapeHtml(r.emblem || '(기본)') + '</td>';
       body.appendChild(tr);
     });

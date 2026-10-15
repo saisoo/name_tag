@@ -183,6 +183,13 @@
             <p class="value" id="f-mobile"></p>
           </div>
         </div>
+        <div class="info-row" id="row-email">
+          <div class="icon">✉️</div>
+          <div>
+            <p class="label">이메일</p>
+            <p class="value" id="f-email"></p>
+          </div>
+        </div>
         <div class="info-row">
           <div class="icon">🏫</div>
           <div>
@@ -195,10 +202,11 @@
       <div class="actions">
         <a id="btn-call-mobile" class="btn-primary full" href="#">휴대전화 걸기</a>
         <a id="btn-call-ext" class="btn-secondary" href="#">내선 전화</a>
-        <button id="btn-vcard" class="btn-secondary" type="button">연락처 저장</button>
+        <a id="btn-email" class="btn-secondary" href="#">이메일 보내기</a>
+        <button id="btn-vcard" class="btn-secondary full" type="button">연락처 저장</button>
       </div>
 
-      <p class="footer-note">이 페이지는 덕영고등학교에서 제작한 디지털 명함입니다.</p>
+      <p class="footer-note">이 페이지는 학교 공식 디지털 명함입니다.</p>
     </div>
 
   </div>
@@ -208,7 +216,7 @@
    * 설정: Google Apps Script 배포 후 발급된 웹 앱 URL(…/exec)을 넣으세요.
    * ============================================================ */
   var CONFIG = {
-    API_URL: 'https://script.google.com/macros/s/AKfycbxOTy0lL3C0Mv--Wcup69CYze7aGdcF-VOSNfPqg22AwCKuT49iEcrue4Gq1AVHabc0Og/exec',
+    API_URL: 'https://script.google.com/macros/s/여기에_배포된_스크립트_ID/exec',
     LOGO_DIR: 'assets/logos/',
     DEFAULT_LOGO: 'default.png'
   };
@@ -292,6 +300,18 @@
     return true;
   }
 
+  function setupEmailButton(btnId, email, rowId) {
+    var btn = document.getElementById(btnId);
+    var row = rowId ? document.getElementById(rowId) : null;
+    if (!email) {
+      btn.style.display = 'none';
+      if (row) row.style.display = 'none';
+      return false;
+    }
+    btn.href = 'mailto:' + email;
+    return true;
+  }
+
   function render(d) {
     document.getElementById('f-school').textContent = d.school || '';
     document.getElementById('f-dept').textContent = d.dept || '';
@@ -300,11 +320,13 @@
     document.getElementById('f-title').textContent = d.title || '';
     document.getElementById('f-ext').textContent = d.ext || '-';
     document.getElementById('f-mobile').textContent = d.mobile || '-';
+    document.getElementById('f-email').textContent = d.email || '-';
     document.getElementById('f-org').textContent = [d.school, d.dept].filter(Boolean).join(' · ');
     document.getElementById('f-emblem').src = CONFIG.LOGO_DIR + (d.emblem || CONFIG.DEFAULT_LOGO);
 
     var mobileOk = setupCallButton('btn-call-mobile', d.mobile, 'row-mobile');
     var extOk = setupCallButton('btn-call-ext', d.ext, 'row-ext');
+    setupEmailButton('btn-email', d.email, 'row-email');
     var vcardBtn = document.getElementById('btn-vcard');
 
     if (!mobileOk && extOk) {
@@ -312,9 +334,6 @@
       var extBtn = document.getElementById('btn-call-ext');
       extBtn.classList.remove('btn-secondary');
       extBtn.classList.add('btn-primary', 'full');
-    }
-    if (!mobileOk && !extOk) {
-      vcardBtn.classList.add('full');
     }
 
     vcardBtn.addEventListener('click', function () {
@@ -336,6 +355,7 @@
       'TITLE:' + (d.title || ''),
       d.ext ? 'TEL;TYPE=WORK,VOICE:' + d.ext : '',
       d.mobile ? 'TEL;TYPE=CELL:' + d.mobile : '',
+      d.email ? 'EMAIL;TYPE=WORK:' + d.email : '',
       'END:VCARD'
     ].filter(Boolean).join('\r\n');
 

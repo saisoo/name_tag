@@ -206,7 +206,7 @@
         <button id="btn-vcard" class="btn-secondary full" type="button">연락처 저장</button>
       </div>
 
-      <p class="footer-note"> Copyright © 2026 DYGR. All rights reserved. </p>
+      <p class="footer-note">이 페이지는 학교 공식 디지털 명함입니다.</p>
     </div>
 
   </div>
@@ -326,14 +326,28 @@
 
     var mobileOk = setupCallButton('btn-call-mobile', d.mobile, 'row-mobile');
     var extOk = setupCallButton('btn-call-ext', d.ext, 'row-ext');
-    setupEmailButton('btn-email', d.email, 'row-email');
+    var emailOk = setupEmailButton('btn-email', d.email, 'row-email');
     var vcardBtn = document.getElementById('btn-vcard');
+    var extBtn = document.getElementById('btn-call-ext');
+    var emailBtn = document.getElementById('btn-email');
+    var extPromoted = false;
 
     if (!mobileOk && extOk) {
       // 휴대전화가 없으면 내선 전화를 주 버튼(전체 너비)으로 승격
-      var extBtn = document.getElementById('btn-call-ext');
       extBtn.classList.remove('btn-secondary');
       extBtn.classList.add('btn-primary', 'full');
+      extPromoted = true;
+    }
+
+    // 보조 버튼들(내선/이메일/연락처저장)을 실제로 보이는 것만 모아서 2열로 짝짓고,
+    // 홀수로 남는 마지막 버튼만 전체 너비로 늘려서 빈 칸이 생기지 않게 합니다.
+    var secondaryBtns = [];
+    if (extOk && !extPromoted) secondaryBtns.push(extBtn);
+    if (emailOk) secondaryBtns.push(emailBtn);
+    secondaryBtns.push(vcardBtn);
+    secondaryBtns.forEach(function (btn) { btn.classList.remove('full'); });
+    if (secondaryBtns.length % 2 === 1) {
+      secondaryBtns[secondaryBtns.length - 1].classList.add('full');
     }
 
     vcardBtn.addEventListener('click', function () {
